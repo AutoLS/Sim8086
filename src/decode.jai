@@ -536,6 +536,30 @@ decode_instruction :: (ptr: *u8) -> Instruction
 
 print_instruction :: (instruction: Instruction, builder: *String_Builder)
 {
-    type_string := to_lower_copy(tprint("%", instruction.type));
+    type_string := to_lower_copy_new(tprint("%", instruction.type));
     print_to_builder(builder, "% %, %\n", type_string, instruction.operand_l, instruction.operand_r);
+}
+
+print_decoded :: (decoded: instruction, builder: *String_Builder)
+{
+    //print("%\n", decoded.Op);
+    operand_l := decoded.Operands[0];
+    reg_l := to_string(Sim86_RegisterNameFromOperand(*operand_l.Register));
+    operand_r := decoded.Operands[1];
+    reg_r := to_string(Sim86_RegisterNameFromOperand(*operand_r.Register));
+
+    print_to_builder(builder, "% ", decoded.Op);
+
+    if operand_l.Type == 
+    {
+        case .Register; print_to_builder(builder, "%", reg_l);
+        case .Immediate; print_to_builder(builder, "%", operand_l.Immediate.Value);
+    }
+
+    if operand_r.Type == 
+    {
+        case .Register; print_to_builder(builder, ", %", reg_r);
+        case .Immediate; print_to_builder(builder, ", %", operand_r.Immediate.Value);
+    }
+    print_to_builder(builder, "\n");
 }
