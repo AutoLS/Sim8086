@@ -3,6 +3,8 @@
 #import "File_Utilities";
 #import "String";
 #import "Math";
+#import "Sim8086Lib";
+#import "Hash_Table";
 
 #load "decode.jai";
 #load "sim.jai";
@@ -26,25 +28,29 @@ main :: ()
     ptr: *u8 = data.data;
     end := ptr + data.count;
 
-    last_instruction_type := Transfer_Type.NONE;
+    table: instruction_table; 
+    Sim86_Get8086InstructionTable(*table);
 
     simulator: Sim8086;
+    array_reserve(*simulator.memory, 1024*1024);
+    //init_sim8086(*simulator);
 
-    while ptr < end
+    while simulator.ip < data.count
     {
-        new_instruction := decode_instruction(ptr);
-        if last_instruction_type != new_instruction.transfer_type
+        decoded: instruction;
+        Sim86_Decode8086Instruction(xx (data.count - simulator.ip), ptr + simulator.ip, *decoded);
+        if decoded.Op 
         {
-            print_to_builder(*builder, "\n%\n", new_instruction.transfer_type);
-            last_instruction_type = new_instruction.transfer_type;
+            print_decoded(decoded, *builder);
+            execute_instruction(*simulator, decoded);
         }
-        if new_instruction.type != .UNKNOWN
+        else
         {
-            print_instruction(new_instruction, *builder);
-            execute_instruction(*simulator, *new_instruction);
+            log_error("Unrecognized instruction");
+            exit(-1);
         }
-        ptr += new_instruction.size;
     }
+
 
     output := builder_to_string(*builder);
 
@@ -54,18 +60,5 @@ main :: ()
     write_entire_file(output_path, output);
     
     print("Decoding complete. Output: %\n", output_path);
-
-    new_context := context;
-    push_context new_context {
-        format_int := *context.print_style.default_format_int;
-        format_int.base = 16;
-        format_int.minimum_digits = size_of(s32);
-        for simulator.registers
-        {
-            print("%: 0x%\n", cast(Register)it_index, it);
-        }
-    }
-
-    test := 0b1111;
-    print("test: %\n", test);
+    print_registers(simulator);
 }
